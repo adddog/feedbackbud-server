@@ -107,33 +107,6 @@ const Sockets = function(server, config) {
     yield* [...map.entries()].sort((a, b) => a[1] - b[1])
   }
 
-  //DEPRICTED
-  const alertMembersOfNewSocket = ({ roomId }) => {
-    if (rooms.has(roomId)) {
-      let room = rooms.get(roomId)
-      for (let { id } of room.members.values()) {
-        sockets.get(id).emit("room:newmember")
-      }
-    }
-  }
-
-  const canSocketJoinRoom = ({ roomId, desktop }) => {
-    const numDesktops = wu(rooms.get(roomId).members.values())
-      .takeWhile(v => v.desktop)
-      .toArray().length
-    const numMobiles = wu(rooms.get(roomId).members.values())
-      .takeWhile(v => !v.desktop)
-      .toArray().length
-    if (rooms.get(roomId).members.size >= MAX_MEMBERS_ROOM)
-      return false
-    if (numDesktops >= 3) return false
-    if (numMobiles < 1) {
-      return true
-    } else if (numMobiles <= 1 && numDesktops <= 2) {
-      return true
-    }
-  }
-
   io.on("connection", function(socket) {
     sockets.set(socket.id, socket)
     users.set(socket.id, {
@@ -213,19 +186,10 @@ const Sockets = function(server, config) {
     })
 
     socket.on("rooms:canJoin", function({ roomId, desktop }) {
-      console.log(`Joinging room ${roomId} as a desktop ${desktop}`)
-      if (!rooms.get(roomId)) {
-        //alertMembersOfNewSocket({ roomId })
         socket.emit("rooms:canJoin", {
           canJoin: true,
-          members: null,
-        })
-      } else {
-        socket.emit("rooms:canJoin", {
-          canJoin: canSocketJoinRoom({ roomId, desktop }), //rooms.get(roomId).members.size < MAX_MEMBERS_ROOM,
           members: rooms.get(roomId).members.size,
         })
-      }
     })
   })
 }
