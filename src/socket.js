@@ -1,4 +1,3 @@
-const geolib = require("geolib")
 const {
   isFunction,
   forIn,
@@ -11,16 +10,21 @@ const {
 const SignalSockets = require("signal-master/sockets")
 const colors = require("colors")
 
+const Users = require("./users")
+
 const Sockets = function(server, config) {
   const MAX_MEMBERS_ROOM = 4
 
   var io = SignalSockets(server, config)
+
 
   const sockets = new Map()
   const userIds = new Set()
   const users = new Map()
   const rooms = new Map()
   const roomIds = new Set()
+
+  const userApi = Users(io, sockets)
 
   const getAvailableRoomIdsToJoin = () => {
     let _roomIds = []
@@ -82,8 +86,9 @@ const Sockets = function(server, config) {
       room.members.delete(socketId)
       console.log(
         colors.green(
-          `member ${socketId} has left room ${roomId}. members left: ${room
-            .members.size}`
+          `member ${socketId} has left room ${roomId}. members left: ${
+            room.members.size
+          }`
         )
       )
       destroyRoomIfNoMembers({ room, roomId })
@@ -124,8 +129,8 @@ const Sockets = function(server, config) {
         destroyRoomIfNoMembers({ room, roomId: room.id })
       }
 
-      io.sockets.emit("rooms:get", getAvailableRoomIdsToJoin())
       userIds.delete(socket.id)
+      userApi.userDisconnection(socket.id)
 
       console.log(colors.green(`Room remaining: ${rooms.size}`))
       forIn(socket._events, (val, key) => {
@@ -138,36 +143,11 @@ const Sockets = function(server, config) {
       console.log(colors.yellow(`Users remaining ${userIds.size}`))
     })
 
-    socket.on("handshake", function(data = {}) {})
+    socket.on("handshake", data => socket.emit("user:id", sockets.id))
 
-    socket.on("geolocation:update", function(location) {
-      const user = users.get(socket.id)
-      users.set(socket.id, { ...user, location })
+    socket.on("users:get:id", () => {
+      socket.emit("users:get:id", Array.from(sockets.keys()))
     })
-
-    socket.on("geolocation:findNear", function() {
-      const { location } = users.get(socket.id)
-      const otherUsers = [...users.values()].filter(
-        user => user.id !== socket.id && !!user.location
-      )
-
-      const ordered = geolib
-        .orderByDistance(
-          location,
-          otherUsers.map(user => ({
-            latitude: user.location.latitude,
-            longitude: user.location.longitude,
-          }))
-        )
-        .map(values => ({
-          ...values,
-          ...otherUsers[values.key],
-        }))
-
-      socket.emit(`${socket.id}:geolocation:findNear`, ordered)
-    })
-
-    //******
 
     socket.on("room:create", ({ roomId, desktop }) => {
       createRoom({ socketId: socket.id, roomId, desktop })
@@ -186,11 +166,14 @@ const Sockets = function(server, config) {
     })
 
     socket.on("rooms:canJoin", function({ roomId, desktop }) {
-        socket.emit("rooms:canJoin", {
-          canJoin: true,
-          members: rooms.get(roomId).members.size,
-        })
+      socket.emit("rooms:canJoin", {
+        canJoin: true,
+        members: rooms.get(roomId).members.size,
+      })
     })
+
+    userApi.userConnection(socket.id)
+
   })
 }
 

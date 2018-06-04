@@ -58,24 +58,27 @@ app.use(router)
 
 const isHTTPS = process.env.SERVER_PROTOCALL === "https"
 if (isHTTPS) {
-  server = https.createServer(
-    {
-      key: fs.readFileSync(
-        path.join(getHomePath(), ".localhost-ssl/local_key.pem")
-      ),
-      cert: fs.readFileSync(
-        path.join(getHomePath(), ".localhost-ssl/local_cert.pem")
-      ),
-    },
-    app
-  )
+  server = https
+    .createServer(
+      {
+        key: fs.readFileSync(
+          path.join(getHomePath(), ".localhost-ssl/local_key.pem")
+        ),
+        cert: fs.readFileSync(
+          path.join(getHomePath(), ".localhost-ssl/local_cert.pem")
+        ),
+      },
+      app
+    )
+    .listen(process.env.PORT)
 } else {
   server = app.listen(process.env.PORT)
 }
 
 console.log(
-  `Listening ${process.env.SERVER_PROTOCALL} on port  ${process.env
-    .PORT}  on  ${host}`
+  `Listening ${process.env.SERVER_PROTOCALL} on port  ${
+    process.env.PORT
+  }  on  ${host}`
 )
 
 //*******************
