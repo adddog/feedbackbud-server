@@ -13,7 +13,7 @@ const colors = require("colors")
 const Users = require("./users")
 const User = require("./user")
 
-const Sockets = function(server, config) {
+const Room = function(server, config) {
   const MAX_MEMBERS_ROOM = 4
 
   const io = SignalSockets(server, config)

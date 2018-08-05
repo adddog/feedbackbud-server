@@ -36,5 +36,16 @@
     "uuid": "^3.1.0",
     "wu": "^2.1.0"
   },
-  "false": {}
+  "false": {},
+  "prettier": {
+    "useTabs": false,
+    "bracketSpacing": true,
+    "tabWidth": 1,
+    "printWidth": 80,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "jsxBracketSameLine": false,
+    "parser": "babylon",
+    "semi": false
+  }
 }
